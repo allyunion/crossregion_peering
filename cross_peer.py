@@ -74,7 +74,6 @@ class VPCCrossPeering:
                 'VpcPeeringConnections'] if item['Status'][
                     'Code'] not in ('deleted', 'rejected')]
         if not results:
-            print(response)
             response = client.describe_vpc_peering_connections(
                 Filters=[
                     {
@@ -87,14 +86,11 @@ class VPCCrossPeering:
                     }
                 ]
             )
-            print(response)
             results = [
                 item['VpcPeeringConnectionId'] for item in response[
                     'VpcPeeringConnections'] if item['Status'][
                         'Code'] not in ('deleted', 'rejected')]
             if not results:
-                print(results)
-
                 client = boto3.client('ec2', region_name=self.region)
                 response = client.create_vpc_peering_connection(
                     VpcId=self.vpc_id,
@@ -117,7 +113,19 @@ class VPCCrossPeering:
                     'VpcPeeringConnectionId': vpc_peering_connection_id}
                 return vpc_peering_connection_id
             else:
-                return results
+                vpc_peering_connection_id = results[0]
+                client = boto3.client('ec2', region_name=next_region)
+                client.accept_vpc_peering_connection(
+                    DryRun=False,
+                    VpcPeeringConnectionId=vpc_peering_connection_id)
+
+                new_tags = []
+                new_tags.append({'Key': 'Name', 'Value': '{}.{}.to.{}'.format(
+                    self.name,
+                    self.region,
+                    next_region)})
+                new_tags += self.tags
+                client.create_tags(DryRun=False, Resources=[vpc_peering_connection_id], Tags=new_tags)
         else:
             return results
 
