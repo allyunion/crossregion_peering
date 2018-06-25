@@ -121,4 +121,4 @@ class CrossPeering:
         """Peer with another region"""
         return self.data[region].peer_with_region(
             next_region,
-            peer.data[next_region].vpc_id)
+            self.data[next_region].vpc_id)
