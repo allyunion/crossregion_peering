@@ -75,7 +75,7 @@ class VPCCrossPeering:
                     'Code'] not in 'deleted']
         if not results:
             client = boto3.client('ec2', region_name=self.region)
-            response = client.create_vpc_connection(
+            response = client.create_vpc_peering_connection(
                 VpcId=self.vpc_id,
                 PeerVpcId=next_vpc_id,
                 PeerRegion=next_region)
