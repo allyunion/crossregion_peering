@@ -37,6 +37,8 @@ class VPCCrossPeering:
         self.peering = {}
         self.tags = tags
 
+        self.discover_vpc_id()
+
     def discover_vpc_id(self):
         """Discover VPC Id"""
         if self.vpc_id is None:
@@ -71,7 +73,31 @@ class VPCCrossPeering:
             item['VpcPeeringConnectionId'] for item in response[
                 'VpcPeeringConnections'] if item['Status'][
                     'Code'] not in 'deleted']
-        print(results)
+        if not results:
+            client = boto3.client('ec2', region_name=self.region)
+            response = client.create_vpc_connection(
+                VpcId=self.vpc_id,
+                PeerVpcId=next_vpc_id,
+                PeerRegion=next_region)
+            vpc_peering_connection_id = response['VpcPeeringConnection']['VpcPeeringConnectionId']
+    
+            waiter = client.get_waiter('vpc_peering_connection_exists')
+            waiter.wait(VpcPeeringConnectionIds=[vpc_peering_connection_id])
+    
+            new_tags = []
+            new_tags.append({'Key': 'Name', 'Value': '{}.{}.to.{}'.format(
+                self.name,
+                self.region,
+                next_region)})
+            new_tags += self.tags
+            client.create_tags(DryRun=False, Resources=[vpc_peering_connection_id], Tags=new_tags)
+    
+            self.peering[next_region] = {
+                'VpcPeeringConnectionId': vpc_peering_connection_id}
+            return vpc_peering_connection_id
+        else:
+            return results
+
 
 class CrossPeering:
     """Class that handles the cross peering"""
@@ -90,3 +116,9 @@ class CrossPeering:
         self.data = {}
         for region in self.regions:
             self.data[region] = VPCCrossPeering(self.name, region)
+
+    def peer_with_region(self, region, next_region):
+        """Peer with another region"""
+        return self.data[region].peer_with_region(
+            next_region,
+            peer.data[next_region].vpc_id)
