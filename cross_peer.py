@@ -74,27 +74,50 @@ class VPCCrossPeering:
                 'VpcPeeringConnections'] if item['Status'][
                     'Code'] not in 'deleted']
         if not results:
-            client = boto3.client('ec2', region_name=self.region)
-            response = client.create_vpc_peering_connection(
-                VpcId=self.vpc_id,
-                PeerVpcId=next_vpc_id,
-                PeerRegion=next_region)
-            vpc_peering_connection_id = response['VpcPeeringConnection']['VpcPeeringConnectionId']
+            print(response)
+            response = client.describe_vpc_peering_connections(
+                Filters=[
+                    {
+                        'Name': 'accepter-vpc-info.vpc-id',
+                        'Values': [self.vpc_id]
+                    },
+                    {
+                        'Name': 'requester-vpc-info.vpc-id',
+                        'Values': [next_vpc_id]
+                    }
+                ]
+            )
+            print(response)
+            results = [
+                item['VpcPeeringConnectionId'] for item in response[
+                    'VpcPeeringConnections'] if item['Status'][
+                        'Code'] not in 'deleted']
+            if not results:
+                print(results)
+
+                client = boto3.client('ec2', region_name=self.region)
+                response = client.create_vpc_peering_connection(
+                    VpcId=self.vpc_id,
+                    PeerVpcId=next_vpc_id,
+                    PeerRegion=next_region)
+                vpc_peering_connection_id = response['VpcPeeringConnection']['VpcPeeringConnectionId']
+
+                waiter = client.get_waiter('vpc_peering_connection_exists')
+                waiter.wait(VpcPeeringConnectionIds=[vpc_peering_connection_id])
     
-            waiter = client.get_waiter('vpc_peering_connection_exists')
-            waiter.wait(VpcPeeringConnectionIds=[vpc_peering_connection_id])
+                new_tags = []
+                new_tags.append({'Key': 'Name', 'Value': '{}.{}.to.{}'.format(
+                    self.name,
+                    self.region,
+                    next_region)})
+                new_tags += self.tags
+                client.create_tags(DryRun=False, Resources=[vpc_peering_connection_id], Tags=new_tags)
     
-            new_tags = []
-            new_tags.append({'Key': 'Name', 'Value': '{}.{}.to.{}'.format(
-                self.name,
-                self.region,
-                next_region)})
-            new_tags += self.tags
-            client.create_tags(DryRun=False, Resources=[vpc_peering_connection_id], Tags=new_tags)
-    
-            self.peering[next_region] = {
-                'VpcPeeringConnectionId': vpc_peering_connection_id}
-            return vpc_peering_connection_id
+                self.peering[next_region] = {
+                    'VpcPeeringConnectionId': vpc_peering_connection_id}
+                return vpc_peering_connection_id
+            else:
+                return results
         else:
             return results
 
