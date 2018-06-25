@@ -122,8 +122,8 @@ class VPCCrossPeering:
                 new_tags = []
                 new_tags.append({'Key': 'Name', 'Value': '{}.{}.to.{}'.format(
                     self.name,
-                    self.region,
-                    next_region)})
+                    next_region,
+                    self.region)})
                 new_tags += self.tags
                 client.create_tags(DryRun=False, Resources=[vpc_peering_connection_id], Tags=new_tags)
         else:
