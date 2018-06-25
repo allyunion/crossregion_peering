@@ -115,7 +115,10 @@ class CrossPeering:
         self.tags = tags
         self.data = {}
         for region in self.regions:
-            self.data[region] = VPCCrossPeering(self.name, region)
+            self.data[region] = VPCCrossPeering(
+                self.name,
+                region,
+                tags=self.tags)
 
     def peer_with_region(self, region, next_region):
         """Peer with another region"""
