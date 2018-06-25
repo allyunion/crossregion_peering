@@ -114,7 +114,7 @@ class VPCCrossPeering:
                 return vpc_peering_connection_id
             else:
                 vpc_peering_connection_id = results[0]
-                client = boto3.client('ec2', region_name=next_region)
+                client = boto3.client('ec2', region_name=self.region)
                 client.accept_vpc_peering_connection(
                     DryRun=False,
                     VpcPeeringConnectionId=vpc_peering_connection_id)
