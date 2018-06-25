@@ -72,7 +72,7 @@ class VPCCrossPeering:
         results = [
             item['VpcPeeringConnectionId'] for item in response[
                 'VpcPeeringConnections'] if item['Status'][
-                    'Code'] not in 'deleted']
+                    'Code'] not in ('deleted', 'rejected')]
         if not results:
             print(response)
             response = client.describe_vpc_peering_connections(
@@ -91,7 +91,7 @@ class VPCCrossPeering:
             results = [
                 item['VpcPeeringConnectionId'] for item in response[
                     'VpcPeeringConnections'] if item['Status'][
-                        'Code'] not in 'deleted']
+                        'Code'] not in ('deleted', 'rejected')]
             if not results:
                 print(results)
 
