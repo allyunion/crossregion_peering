@@ -76,11 +76,11 @@ class VPCCrossPeering:
 class CrossPeering:
     """Class that handles the cross peering"""
 
-    def __init__(self, regions=None, peering=None, name=None, tags=None):
+    def __init__(self, name, regions=None, peering=None, tags=None):
         """Constructor"""
         self.session = boto3.Session()
         self.name = name
-        self.regions = region
+        self.regions = regions
         if self.regions is None:
             self.regions = REGIONS
         self.peering = peering
